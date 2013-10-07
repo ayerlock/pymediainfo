@@ -1,8 +1,9 @@
-#!/bin/env python
+#!/bin/python
 
 import	ctypes
 import	logging
 import	os
+import	re
 import	sys
 
 sys.setrecursionlimit(5000)
@@ -11,7 +12,7 @@ def argparser():
 	import argparse
 	
 	global Logger
-	ap = argparse.ArgumentParser( description = 'A web image grabber.', prog = os.path.basename(re.sub(".py", "", sys.argv[0])) )
+	ap = argparse.ArgumentParser( description = 'A pythonized front end to MediaInfo.', prog = os.path.basename(re.sub(".py", "", sys.argv[0])) )
 	gap = ap.add_argument_group( 'program information' )
 	gap.add_argument( 		'--version',	action = 'version',		version = '%(prog)s 0.1' )
 	gap.add_argument(		'--program',	action = 'store',		dest = "prog",		metavar = "prog",			default = os.path.basename(re.sub(".py", "", sys.argv[0])))
@@ -29,7 +30,7 @@ def argparser():
 	gap.add_argument( '-o',	'--outfile',	action = 'store',		dest = "outfile",	metavar = "outfile",		default = ( '%s.html' % (os.path.basename(re.sub(".py", "", sys.argv[0])))) )
 	
 	ProgArgs								= ap.parse_args()
-	Logger									= initLog( args.loglevel, args.logfile )
+	Logger									= initLog( ProgArgs.loglevel, ProgArgs.logfile )
 	
 	return ProgArgs
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ def initLog( LLevel, LogFile = None, module = None ):
 	LogLevel										= LogLevels.get( LLevel, logging.NOTSET )
 	initLogger.setLevel( LogLevel )
 	LogFormat										= '(%(asctime)-11s)  :%(levelname)-9s:%(funcName)-13s:%(message)s'
-	if ( len( logger.handlers ) == 0 ):
+	if ( len( initLogger.handlers ) == 0 ):
 		try:
 			Colorize								= __import__( 'logutils.colorize', fromlist=['colorize'] )
 			LogHandler								= Colorize.ColorizingStreamHandler()
@@ -65,12 +66,30 @@ def initLog( LLevel, LogFile = None, module = None ):
 		initLogger.addHandler( LogFHandler )
 	return initLogger
 ###------------------------------------------------------------------------------------------------------------------------------
+def LibImport( libPath, libFile ):
+	if ( not os.path.isdir( libPath ) ):
+		pStatus( 3 )
+	else:
+		if ( not os.path.isfile( libFile ) ):
+			pStatus( 4 )
+		else:
+			sys.path.append( os.path.abspath( libPath ) )
+			actLib									= re.sub( ".py$", "", libFile )
+			actLib									= re.sub( "^.*/", "", actLib )
+			#exec( "import %s as LibImport" % actLib )
+			LibImport								= __import__( actLib )
+	return LibImport
+###------------------------------------------------------------------------------------------------------------------------------
 def pStatus( status ):
 	if ( status > 0 ):
 		if ( status == 1 ):
 			Logger.error("Error: Problem parsing arguments.")
 		elif ( status == 2 ):
 			Logger.error("Error: File not found.")
+		elif ( status == 3 ):
+			Logger.error("Error: MediaInfo Python library path not found.")
+		elif ( status == 4 ):
+			Logger.error("Error: MediaInfo Python library not found.")
 		sys.exit( status )
 	return True
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -80,6 +99,13 @@ def main():
 		pStatus( 1 )
 	if ( not os.path.isfile( ProgArgs.file ) ):
 		pStatus( 2 )
+		
+	###--- Import MediaInfoDLL ------------------------------------------------------------------------
+	PyMediaInfoPath									= "/usr/include/MediaInfoDLL"
+	PyMediaInfoLibFile								= "/usr/include/MediaInfoDLL/MediaInfoDLL.py"
+	PyMedia											= LibImport( PyMediaInfoPath, PyMediaInfoLibFile )
+	###------------------------------------------------------------------------------------------------
+		
 	return pStatus( 0 )
 ###------------------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':

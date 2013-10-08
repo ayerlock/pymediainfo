@@ -1,10 +1,13 @@
+import	codecs
+import	os
+
 ###------------------------------------------------------------------------------------------------------------------------------
 class DataHandler():
 	def __init__( self, filename ):
 		self.data									= []
 		self.filename								= filename
 		if ( os.path.isfile( self.filename ) ):
-			self.ReadData()
+			self.Read()
 	#----------------------------------------------------------------------------------------------------------------------
 	def OpenFile( self ):
 		import codecs

@@ -1,12 +1,13 @@
 #!/bin/python
 
-import	codecs
-import	datahandler
 import	logging
 import	os
 import	re
 import	sys
-from	bs4		import NavigableString, BeautifulSoup	as bSoup
+from	bs4				import NavigableString, BeautifulSoup	as bSoup
+from 	datahandler		import DataHandler
+from 	pymediainfo		import MediaInfo	as MediaInfo
+from 	pymediainfo		import MediaInfoDLL	as MediaInfoDLL
 
 sys.setrecursionlimit(5000)
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -69,21 +70,6 @@ def initLog( LLevel, LogFile = None, module = None ):
 		LogFHandler.setFormatter( logging.Formatter( LogFormat, datefmt='%I:%M:%S %p' ) )
 		initLogger.addHandler( LogFHandler )
 	return initLogger
-
-###------------------------------------------------------------------------------------------------------------------------------
-def LibImport( libPath, libFile ):
-	if ( not os.path.isdir( libPath ) ):
-		pStatus( 3 )
-	else:
-		if ( not os.path.isfile( libFile ) ):
-			pStatus( 4 )
-		else:
-			sys.path.append( os.path.abspath( libPath ) )
-			actLib									= re.sub( ".py$", "", libFile )
-			actLib									= re.sub( "^.*/", "", actLib )
-			#exec( "import %s as LibImport" % actLib )
-			LibImport								= __import__( actLib )
-	return LibImport
 ###------------------------------------------------------------------------------------------------------------------------------
 def pStatus( status ):
 	if ( status > 0 ):
@@ -98,81 +84,59 @@ def pStatus( status ):
 		sys.exit( status )
 	return True
 ###------------------------------------------------------------------------------------------------------------------------------
-def OpenFile( file ):
-	MediaInfo.Open( file )
-	return True
-###------------------------------------------------------------------------------------------------------------------------------
-def CloseFile():
-	MediaInfo.Close() 
-	return True
-###------------------------------------------------------------------------------------------------------------------------------
-def GetInfo( file, type ):
-	if ( OpenFile( file ) ):
-		if ( type == "html" ):
-			MediaInfo.Option( "Inform", "HTML" )
-		elif ( type == "xml" ):
-			MediaInfo.Option( "Inform", "XML" )
-		MediaInfo.Option( "Complete", "1" )
-		InformData									= MediaInfo.Inform()
-		CloseFile()
-	else:
-		InformData									= False
-	return InformData
-###------------------------------------------------------------------------------------------------------------------------------
-def Info( ProgArgs ):
-	HTMLOut											= False
-	XMLOut											= False
+def SaveInfo( InformData ):
+	MInfo										= MediaInfo( ProgArgs.file, Logger )
+	if ( ProgArgs.pprint ):
+		Logger.debug( "Output Format:\t%s" % ( ProgArgs.format ) )
+		if ( ProgArgs.format == "html" ):
+			InformSoup							= bSoup( MInfo.InformData( ProgArgs.format ), "html5lib" )
+			InformData							= InformSoup.prettify()
+		elif ( ProgArgs.format == "xml" ):
+			InformSoup							= bSoup( MInfo.InformData( ProgArgs.format ), "xml" )
+			InformData							= InformSoup.prettify()
+		else:
+			InformData							= InformData( MInfo.ProgArgs.format )
 	
-	if ( ProgArgs.format == "html" ):
-		HTMLOut										= True
-		InformData									= GetInfo( ProgArgs.file, "html" )
-		outExt										= "html"
-	elif ( ProgArgs.format == "xml" ):
-		XMLOut										= True
-		InformData									= GetInfo( ProgArgs.file, "xml" )
-		outExt										= "xml"
-	else:
-		InformData									= GetInfo( ProgArgs.file, "normal" )
-		outExt										= "out"
-		
-	if ( InformData == False ):
-		Logger.error( "Error getting media information from file.")
-	else:
-		if ( ProgArgs.pprint ):
-			if ( HTMLOut ):
-				InformSoup								= bSoup( InformData, "html5lib" )
-			elif ( XMLOut ):
-				InformSoup								= bSoup( InformData, "xml" )
-			InformData								= InformSoup.prettify()
-		
-		if ( ProgArgs.outfile ):
-			curDir									= os.getcwd()
-			outfile									= ( "%s/%s.%s" % ( curDir, ProgArgs.outfile, outExt ) )
-			OutHandle								= DataHandler( file )
+	if ( ProgArgs.outfile ):
+		CurrentDir								= os.getcwd()
+		OutFile									= ( "%s/%s.%s" % ( CurrentDir, ProgArgs.outfile, MInfo.InfoType ) )
+		OutHandle								= DataHandler( OutFile )
+		if ( InformData ):
 			OutHandle.Write( InformData )
 		else:
+			Logger.error( "Error getting media information from file.")
+	else:
+		if ( InformData ):
 			print( InformData )
-		
-	print( "XML Output:\t%s" % XMLOut )
-	print( "HTML Output:\t%s" % HTMLOut )
+		else:
+			Logger.error( "Error getting media information from file.")
 	return True
 ###------------------------------------------------------------------------------------------------------------------------------
+def DLLInfo():
+	MInfo										= MediaInfo( ProgArgs.file, Logger )
+	MInfo.DLLInfo()
+###------------------------------------------------------------------------------------------------------------------------------
+def GetInform():
+	MInfo										= MediaInfo( ProgArgs.file, Logger )
+	InformData									= MInfo.InformData( ProgArgs.format )
+	return InformData
+###------------------------------------------------------------------------------------------------------------------------------
 def main():
-	ProgArgs										= argparser()
+	global	ProgArgs
+	ProgArgs									= argparser()
 	if ( not ProgArgs ):
 		pStatus( 1 )
 	if ( not os.path.isfile( ProgArgs.file ) ):
 		pStatus( 2 )
 		
-	###--- Import MediaInfoDLL ------------------------------------------------------------------------
-	global	MediaInfo
-	PyMediaInfoPath									= "/usr/include/MediaInfoDLL"
-	PyMediaInfoLibFile								= "/usr/include/MediaInfoDLL/MediaInfoDLL.py"
-	PM												= LibImport( PyMediaInfoPath, PyMediaInfoLibFile )
-	MediaInfo										= PM.MediaInfo()
-	
 	if ( ProgArgs.info ):
-		success										= Info( ProgArgs )
+		success									= Info( ProgArgs )
+		
+	MInfo										= MediaInfo( ProgArgs.file, Logger )
+	
+	print( MInfo.Get( "menu", "first", "Chapters_Pos_Begin", "", ProgArgs.format ) )
+	#InformData									= GetInform( ProgArgs ) )
+	#DLLInfo( ProgArgs )
 	
 	return pStatus( 0 )
 ###------------------------------------------------------------------------------------------------------------------------------

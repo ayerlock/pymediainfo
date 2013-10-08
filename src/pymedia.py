@@ -138,7 +138,7 @@ def main():
 	#InformData									= GetInform( ProgArgs ) )
 	#DLLInfo( ProgArgs )
 	xmlInform									= bSoup( GetInform(), "xml" )
-	print( xmlInform.Prettify() )
+	print( xmlInform.prettify() )
 	
 	return pStatus( 0 )
 ###------------------------------------------------------------------------------------------------------------------------------

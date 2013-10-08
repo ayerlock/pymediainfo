@@ -33,8 +33,6 @@ class MediaInfo( object ):
 		self.MILib									= "/usr/include/MediaInfoDLL/MediaInfoDLL.py"
 		self.MediaInfoDLL							= LibImport( self.MIPath, self.MILib )
 		self.MInfo									= self.MediaInfoDLL.MediaInfo()
-		###----------------------------------------------------------------------------
-		###----------------------------------------------------------------------------
 		if ( os.path.isfile( self.MediaFile ) ):
 			self.Logger.debug( "Found Media File:%s" % ( self.MediaFile ) )
 	###------------------------------------------------------------------------------------------------

@@ -134,9 +134,11 @@ def main():
 		
 	MInfo										= MediaInfo( ProgArgs.file, Logger )
 	
-	print( MInfo.Get( "menu", "first", "Chapters_Pos_Begin", "", ProgArgs.format ) )
+	#print( MInfo.Get( "menu", "first", "Chapters_Pos_Begin", "", ProgArgs.format ) )
 	#InformData									= GetInform( ProgArgs ) )
 	#DLLInfo( ProgArgs )
+	xmlInform									= bSoup( GetInform(), "xml" )
+	print( xmlInform.Prettify() )
 	
 	return pStatus( 0 )
 ###------------------------------------------------------------------------------------------------------------------------------

@@ -219,8 +219,4 @@ class HandBrake( object ):
 				OptionList.append( '--markers "%s"' % ( self.ChapterFile ) )
 		self.Command								= ' '.join( str( Option ) for Option in OptionList )
 		print( self.Command )
-#	HandBrakeCLI	--input Dexter (S04E01) 720p.mkv --title 1 --angle 1 --chapters 1-7 --output .encode/Dexter (S04E01) 720p.mkv --format mkv
-#					--use-opencl --use-hwd --strict-anamorphic --modulus 16 --decomb --encoder x264 --quality 23 --vfr
-#					--audio 3,3 -aencoder copy,faac --mixdown auto,dpl2 --arate Auto,48 --ab 0,160 --drc 0,0 --gain 0,0 --aname="English","English (Stereo)" --audio-fallback faac
-#					--subtitle scan,1,2,3 --subtitle-default=1 --markers=/tmp/Dexter (S04E01) 720p.csv
-#					--x264-preset=slow --x264-profile=high --h264-level=4.1 --verbose=2
+###------------------------------------------------------------------------------------------------------------------------------

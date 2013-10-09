@@ -7,9 +7,8 @@ import	sys
 from	bs4				import NavigableString, BeautifulSoup	as bSoup
 from 	datahandler		import DataHandler
 from	handbrake		import HandBrake
-from 	pymediainfo		import MediaInfo	as MediaInfo
-from 	pymediainfo		import MediaInfoDLL	as MediaInfoDLL
-from 	pymediainfo		import Track		as TrackInfo
+from 	mediainfo		import MediaInfo	as MediaInfo
+from 	mediainfo		import Track		as TrackInfo
 
 sys.setrecursionlimit(5000)
 ###------------------------------------------------------------------------------------------------------------------------------

@@ -87,6 +87,47 @@ class MediaInfo( object ):
 	def InfoType( self ):
 		return self.InfoType
 ###------------------------------------------------------------------------------------------------------------------------------
+class Track( object ):
+	def __init__( self, TrackSoup, TrackType ):
+		self.TrackSoup								= TrackSoup
+		self.TrackType								= TrackType
+		self.TrackDict								= {}
+		if ( self.TrackType == "audio" ):
+			self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_s_', 'Language', 'Title', 'Default', 'Forced']
+			self.Values								= ['0', 'type', 'streamid', 'trackid', 'format', 'channels', 'language', 'title', 'default', 'forced']
+		elif ( self.TrackType == "subtitle" ):
+			self.Keys								= ['index', 'subtitle', 'streamid', 'ID', 'Language', 'Default', 'Forced']
+			self.Values								= ['0', 'type', 'streamid', 'trackid', 'language', 'default', 'forced']
+		elif ( self.TrackType == "video" ):
+			self.Keys								= ['index', 'video', 'streamid', 'ID', 'Format_profile', 'Language', 'Default', 'Forced']
+			self.Values								= ['0', 'type', 'streamid', 'trackid', 'formatprofile', 'language', 'default', 'forced']
+		self.Dict									= dict( zip( self.Keys, self.Values ) )
+	###------------------------------------------------------------------------------------------------
+	def TrackInfo( self ):
+		# This performs an inverse mapping of Values to data found searching for Keys in the TrackSoup
+		for Key, Value in self.Dict.iteritems():
+			if ( Value == "type" ):
+				self.TrackDict[Value]				= Key
+			elif ( Key == "index" ):
+				self.TrackDict[Key]					= "0"
+			elif ( Value == "streamid" ):
+				if self.TrackSoup.has_attr( Key ):
+					self.TrackDict[Value]			= self.TrackSoup[Key].strip()
+			elif ( Value == "language" ):
+				try:
+					self.TrackDict[Value]			= self.TrackSoup.find_next( Key ).get_text().strip()
+				except:
+					self.TrackDict[Value]				= u"Unknown"
+			elif ( Value == "title" ):
+				try:
+					self.TrackDict[Value]			= self.TrackSoup.find_next( Key ).get_text().strip()
+				except:
+					self.TrackDict[Value]				= u"None"
+			else:
+				Data								= self.TrackSoup.find_next( Key ).get_text().strip()
+				self.TrackDict[Value]				= re.sub( " .*$", "", Data )
+		return self.TrackDict
+###------------------------------------------------------------------------------------------------------------------------------
 class MediaInfoDLL( object ):
 	def __init__( self, MediaFile, Logger ):
 		self.MediaFile								= MediaFile

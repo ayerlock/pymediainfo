@@ -6,8 +6,7 @@ class DataHandler():
 	def __init__( self, filename ):
 		self.data									= []
 		self.filename								= filename
-		if ( os.path.isfile( self.filename ) ):
-			self.Read()
+		#if ( os.path.isfile( self.filename ) ):
 	#----------------------------------------------------------------------------------------------------------------------
 	def OpenFile( self ):
 		import codecs
@@ -26,7 +25,10 @@ class DataHandler():
 		try:
 			WriteHDL								= codecs.open( self.filename, mode="a", encoding="utf-8" )
 		except:
-			print( "Error writing to file %s!" % self.filename )
+			try:
+				self.Write( data )
+			except:
+				print( "Error writing to file %s!" % self.filename )
 		else:
 			try:
 				WriteHDL.write( '%s\n' % ( data ) )
@@ -43,16 +45,22 @@ class DataHandler():
 		ReadHDL.close()
 	#----------------------------------------------------------------------------------------------------------------------
 	def Write( self, data ):
-		try:
-			WriteHDL								= codecs.open( self.filename, mode="w", encoding="utf-8" )
-		except:
-			print( "Error opening %s for writing!" % self.filename )
-		else:
+		if ( not os.path.isfile( self.filename ) ):
 			try:
-				WriteHDL.write( '%s\n' % ( data ) )
-			except Exception, e:
-				print( "Error writing to file %s.\tActual: %s" % ( self.filename, e ) )
-			WriteHDL.close()
+				WriteHDL								= codecs.open( self.filename, mode="w", encoding="utf-8" )
+			except:
+				try:
+					self.Append( data )
+				except:
+					print( "Error opening %s for writing!" % self.filename )
+			else:
+				try:
+					WriteHDL.write( '%s\n' % ( data ) )
+				except Exception, e:
+					print( "Error writing to file %s.\tActual: %s" % ( self.filename, e ) )
+				WriteHDL.close()
+		else:
+			self.Append( data )
 	#----------------------------------------------------------------------------------------------------------------------
 	def data( self ):	
 		return self.data

@@ -152,8 +152,8 @@ def GetInform( DataFormat ):
 	InformData									= MInfo.InformData( DataFormat )
 	return InformData
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetTracks( TrackSoup, Type):
-	TInfo										= TrackInfo( TrackSoup, Type )
+def GetTracks( TrackSoup, Type ):
+	TInfo										= TrackInfo( TrackSoup, Type, Logger )
 	Track										= TInfo.TrackInfo()
 	return Track
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -202,6 +202,10 @@ def PrintTrackData( xmlData ):
 	for ChapterID, Chapter in Chapters.iteritems():
 		print( "\t   Chapter %s:\t%s" % ( ChapterID, Chapter ) )
 ###------------------------------------------------------------------------------------------------------------------------------
+def PrettyPrint( xmlData ):
+	xmlInform									= bSoup( xmlData, "xml" )
+	print( xmlInform.prettify() )
+###------------------------------------------------------------------------------------------------------------------------------
 def WriteChapterFile( ChapterList ):
 	for Chapter in ChapterList:
 		ChapterNum								= Chapter[0]
@@ -228,7 +232,7 @@ def GetTrackData( xmlData ):
 		Values									= ['chapter', ChapterID, ChapterText]
 		ChapterDict								= dict( zip( Keys, Values ) )
 		Tracks.append( ChapterDict )
-	HandBrakeCLI								= HandBrake( ProgArgs, Tracks )
+	HandBrakeCLI								= HandBrake( ProgArgs, Tracks, Logger )
 	if ( HandBrakeCLI.ChapterList != False ):
 		if ( not ProgArgs.dryrun ):
 			WriteChapterFile( HandBrakeCLI.ChapterList )
@@ -251,6 +255,9 @@ def main():
 	
 	if ( ProgArgs.pprint ):
 		PrintTrackData( xmlData )
+	
+	if ( ProgArgs.dryrun ):
+		PrettyPrint( xmlData )
 		
 	if ( ProgArgs.handbrake ):
 		GetTrackData( xmlData )

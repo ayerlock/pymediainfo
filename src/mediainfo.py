@@ -81,12 +81,13 @@ class MediaInfo( object ):
 		return self.InfoType
 ###------------------------------------------------------------------------------------------------------------------------------
 class Track( object ):
-	def __init__( self, TrackSoup, TrackType ):
+	def __init__( self, TrackSoup, TrackType, Logger ):
+		self.Logger									= Logger
 		self.TrackSoup								= TrackSoup
 		self.TrackType								= TrackType
 		self.TrackDict								= {}
 		if ( self.TrackType == "audio" ):
-			self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_s_', 'Language', 'Title', 'Default', 'Forced']
+			self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_count', 'Language', 'Title', 'Default', 'Forced']
 			self.Values								= ['0', 'type', 'streamid', 'trackid', 'format', 'channels', 'language', 'title', 'default', 'forced']
 		elif ( self.TrackType == "subtitle" ):
 			self.Keys								= ['index', 'subtitle', 'streamid', 'ID', 'Language', 'Default', 'Forced']
@@ -117,7 +118,11 @@ class Track( object ):
 				except:
 					self.TrackDict[Value]				= u"None"
 			else:
-				Data								= self.TrackSoup.find_next( Key ).get_text().strip()
-				self.TrackDict[Value]				= re.sub( " .*$", "", Data )
+				try:
+					Data								= self.TrackSoup.find_next( Key ).get_text().strip()
+				except:
+					self.Logger.error( "\tError trying to retrieve Key:\t%s" % ( Key ) )
+				else:
+					self.TrackDict[Value]				= re.sub( " .*$", "", Data )
 		return self.TrackDict
 ###------------------------------------------------------------------------------------------------------------------------------

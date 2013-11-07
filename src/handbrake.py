@@ -3,7 +3,8 @@ import	re
 import	sys
 ###------------------------------------------------------------------------------------------------------------------------------
 class HandBrake( object ):
-	def __init__( self, ProgArgs, Tracks ):
+	def __init__( self, ProgArgs, Tracks, Logger = None ):
+		self.Logger									= Logger
 		self.InFile									= ProgArgs.file
 		self.OutFile								= ".encode/%s" % ( re.sub( "MKV$", "mkv", self.InFile ) )
 		self.Title									= ProgArgs.hbtitle
@@ -50,6 +51,12 @@ class HandBrake( object ):
 		self.aTracks								= aTracks
 		# Narrow the list of desired subtitle tracks.
 		self.sTracks								= self.selectTracks( Tracks, "subtitle", "language", self.Language )
+	###------------------------------------------------------------------------------------------------
+	def DebugPrint( self ):
+		print("\tAnalyzing Media: %s" % ( self.InFile ) )
+		self.printTracks( self.vTracks, "video" )
+		self.printTracks( self.aTracks, "audio" )
+		self.printTracks( self.sTracks, "subtitle" )
 	###------------------------------------------------------------------------------------------------
 	def printTracks( self, Tracks, Type ):
 		for Track in Tracks:
@@ -101,12 +108,6 @@ class HandBrake( object ):
 		if ( len( self.ChapterList ) == 0 ):
 			self.ChapterList						= False
 		return self.ChapterList
-	###------------------------------------------------------------------------------------------------
-	def DebugPrint( self ):
-		print("\tAnalyzing Media: %s" % ( self.InFile ) )
-		self.printTracks( self.vTracks, "video" )
-		self.printTracks( self.aTracks, "audio" )
-		self.printTracks( self.sTracks, "subtitle" )
 	###------------------------------------------------------------------------------------------------
 	def AudioOptions( self, OptionList ):
 		if ( len( self.aTracks ) == 1 ):

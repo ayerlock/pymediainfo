@@ -1,5 +1,6 @@
 import	os
 import	re
+import	subprocess
 import	sys
 ###------------------------------------------------------------------------------------------------------------------------------
 _python3											= sys.version_info >= (3,)
@@ -18,16 +19,25 @@ def LibImport( libPath, libFile ):
 	return LibImport
 ###------------------------------------------------------------------------------------------------------------------------------
 class MediaInfo( object ):
-	def __init__( self, MediaFile, Logger ):
-		self.MediaFile								= MediaFile
+	def __init__( self, SourceMedia, Logger ):
+		self.SourceMedia							= SourceMedia
 		self.Logger									= Logger
 		self.InfoType								= "normal"
 		self.MIPath									= "/usr/include/MediaInfoDLL"
 		self.MILib									= "/usr/include/MediaInfoDLL/MediaInfoDLL.py"
 		self.MediaInfoDLL							= LibImport( self.MIPath, self.MILib )
 		self.MInfo									= self.MediaInfoDLL.MediaInfo()
-		if ( os.path.isfile( self.MediaFile ) ):
-			self.Logger.debug( "Found Media File:%s" % ( self.MediaFile ) )
+		if ( os.path.isfile( self.SourceMedia ) ):
+			self.fType( self.SourceMedia )
+			self.Logger.debug( "Found Media File:%s" % ( self.SourceMedia ) )
+		elif ( os.path.isdir( self.SourceMedia ) ):
+			self.Logger.debug( "Found Media File:%s" % ( self.SourceMedia ) )
+	###------------------------------------------------------------------------------------------------
+	def fType( self, fName ):
+		index										= fName.split('.')
+		idxLength									= len( index )
+		self.fExt									= index[idxLength-1]
+		sys.exit()
 	###------------------------------------------------------------------------------------------------
 	def DLLInfo( self ):
 		from pprint import pprint
@@ -38,11 +48,15 @@ class MediaInfo( object ):
 		pprint( self.myDict, indent=2 )
 	###------------------------------------------------------------------------------------------------
 	def OpenMFile( self ):
-		if ( self.MInfo.Open( self.MediaFile ) ):
-			self.Logger.debug( "Opened Media File:\t%s" % ( self.MediaFile ) )
-		else:
-			self.Logger.error( "Error Opening Media File:\t%s" % ( self.MediaFile ) )
-		return True
+		if ( os.path.isfile( self.SourceMedia  ) ):
+			if ( self.MInfo.Open( self.SourceMedia ) ):
+				self.Logger.debug( "Opened Media File:\t%s" % ( self.SourceMedia ) )
+				return True
+			else:
+				self.Logger.error( "Error Opening Media File:\t%s" % ( self.SourceMedia ) )
+				return False
+		elif ( os.path.isdir( self.SourceMedia  ) ):
+			return False
 	###------------------------------------------------------------------------------------------------
 	def CloseMFile( self ):
 		self.MInfo.Close()
@@ -67,6 +81,12 @@ class MediaInfo( object ):
 			#MediaInfo.Option( "Complete", "1" )
 			self.InformData							= self.MInfo.Inform()
 			self.CloseMFile()
+		else:
+			if ( os.path.isdir( self.SourceMedia ) ):
+				Command								= "mediainfo --Output=XML %s" % ( self.SourceMedia )
+				SubData								= subprocess.Popen( Command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+				InformData, StdErr					= SubData.communicate()
+				self.InformData						= InformData.strip()
 	###------------------------------------------------------------------------------------------------
 	def InformData( self, InfoType = "normal" ):
 		self.InfoType								= InfoType
@@ -81,8 +101,9 @@ class MediaInfo( object ):
 		return self.InfoType
 ###------------------------------------------------------------------------------------------------------------------------------
 class Track( object ):
-	def __init__( self, TrackSoup, TrackType, Logger ):
+	def __init__( self, TrackSoup, TrackType, MediaType, Logger ):
 		self.Logger									= Logger
+		self.MediaType								= MediaType
 		self.TrackSoup								= TrackSoup
 		self.TrackType								= TrackType
 		self.TrackDict								= {}
@@ -113,6 +134,16 @@ class Track( object ):
 				except:
 					self.TrackDict[Value]				= u"Unknown"
 			elif ( Value == "title" ):
+				try:
+					self.TrackDict[Value]			= self.TrackSoup.find_next( Key ).get_text().strip()
+				except:
+					self.TrackDict[Value]				= u"None"
+			elif ( Value == "forced" ):
+				try:
+					self.TrackDict[Value]			= self.TrackSoup.find_next( Key ).get_text().strip()
+				except:
+					self.TrackDict[Value]				= u"None"
+			elif ( Value == "default" ):
 				try:
 					self.TrackDict[Value]			= self.TrackSoup.find_next( Key ).get_text().strip()
 				except:

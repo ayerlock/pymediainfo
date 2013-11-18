@@ -23,7 +23,8 @@ def argparser():
 	gap = ap.add_argument_group( 'standard functionality' )
 	gap.add_argument(		'--dryrun',		action = 'store_true' )
 	gap.add_argument(		'--force',		action = 'store_true' )
-	gap.add_argument( '-f',	'--file',		action = 'store',		dest = "file",		metavar = "file",			required = True )
+	gap.add_argument( '-d',	'--directory',	action = 'store',		dest = "directory",	metavar = "directory" )
+	gap.add_argument( '-f',	'--file',		action = 'store',		dest = "file",		metavar = "file" )
 	gap.add_argument( '-i',	'--info',		action = 'store_true' )
 	gap.add_argument( '-v',	'--verbose',	action = 'count',		default = 1 )
 	gap = ap.add_argument_group( 'logging' )
@@ -57,9 +58,17 @@ def argparser():
 	gap.add_argument(	'--hbcmarker',	action = 'store',	dest = "hbcmarker",	metavar = "Chapter Markers",	default = "notset" )
 	
 	ProgArgs								= ap.parse_args()
+	
 	Logger									= initLog( ProgArgs.loglevel, ProgArgs.logfile )
-	if ProgArgs.hbcmarker == "notset":
-		ProgArgs.hbcmarker						= ( '/tmp/%s' % ( os.path.basename(re.sub('\.mkv$', ".csv", ProgArgs.file ) ) ) )
+	if ( not ProgArgs.file ) and ( not ProgArgs.directory ):
+		Logger.error( "Must use -d or -f option.")
+		sys.exit(1)
+	elif ( ProgArgs.file ) and ( ProgArgs.directory ):
+		Logger.error( "Must use either -d or -f option, not both.")
+		sys.exit(1)
+	elif ( ProgArgs.file != None ):
+		if ProgArgs.hbcmarker == "notset":
+			ProgArgs.hbcmarker						= ( '/tmp/%s' % ( os.path.basename(re.sub('\.mkv$', ".csv", ProgArgs.file ) ) ) )
 	
 	return ProgArgs
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -147,13 +156,16 @@ def GetChapters( xmlData ):
 				Chapter[ChapCount]				= child.string.strip()
 	return Chapter
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetInform( DataFormat ):
-	MInfo										= MediaInfo( ProgArgs.file, Logger )
+def GetInform( DataFormat, Type ):
+	if Type == "F":
+		MInfo									= MediaInfo( ProgArgs.file, Logger )
+	elif Type == "D":
+		MInfo									= MediaInfo( ProgArgs.directory, Logger )
 	InformData									= MInfo.InformData( DataFormat )
 	return InformData
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetTracks( TrackSoup, Type ):
-	TInfo										= TrackInfo( TrackSoup, Type, Logger )
+def GetTracks( TrackSoup, Type, MediaType = "F" ):
+	TInfo										= TrackInfo( TrackSoup, Type, MediaType, Logger )
 	Track										= TInfo.TrackInfo()
 	return Track
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -162,7 +174,10 @@ def PrintTrack( Track ):
 	TrackID										= Track["trackid"]
 	Language									= Track["language"]
 	Default										= Track["default"]
-	Forced										= Track["forced"]
+	try:
+		Forced									= Track["forced"]
+	except:
+		Forced									= None
 	if Type == "video":
 		FormatProfile							= Track["formatprofile"]
 		print( "\t   Type: %s\t\tTrackID: %s\t\t\tFormat Profile: %s\tLanguage: %s\tDefault: %s\tForced: %s" % ( Type, TrackID, FormatProfile, Language, Default, Forced ) )
@@ -176,7 +191,12 @@ def PrintTrack( Track ):
 		if ( Language == "English" ):
 			print( "\t   Type: %s\tTrackID: %s\tStreamID: %s\t\t\t\t\tLanguage: %s\tDefault: %s\tForced: %s" % ( Type, TrackID, StreamID, Language, Default, Forced ) )
 ###------------------------------------------------------------------------------------------------------------------------------
-def PrintTrackData( xmlData ):
+def PrintXMLData( xmlData ):
+	xmlInform									= bSoup( xmlData, "xml" )
+	InformData									= xmlInform.prettify()
+	print(InformData)
+###------------------------------------------------------------------------------------------------------------------------------
+def PrintTrackData( xmlData, MediaType = "F" ):
 	xmlInform									= bSoup( xmlData, "xml" )
 	Keys										= ['subtitle', 'audio', 'video']
 	Values										= ['Text', 'Audio', 'Video']
@@ -185,17 +205,17 @@ def PrintTrackData( xmlData ):
 		if ( Type == "video" ):
 			print( "\t===== Video Tracks ===========================================================================================================" )
 			for TrackSoup in xmlInform.find_all( "track", type=SearchKey ):
-				Track							= GetTracks( TrackSoup, Type )
+				Track							= GetTracks( TrackSoup, Type, MediaType )
 				PrintTrack( Track )
 		elif ( Type == "audio" ):
 			print( "\t===== Audio Tracks ===========================================================================================================" )
 			for TrackSoup in xmlInform.find_all( "track", type=SearchKey ):
-				Track							= GetTracks( TrackSoup, Type )
+				Track							= GetTracks( TrackSoup, Type, MediaType )
 				PrintTrack( Track )
 		elif ( Type == "subtitle" ):
 			print( "\t===== Subtitle Tracks ========================================================================================================" )
 			for TrackSoup in xmlInform.find_all( "track", type=SearchKey ):
-				Track							= GetTracks( TrackSoup, Type )
+				Track							= GetTracks( TrackSoup, Type, MediaType )
 				PrintTrack( Track )
 	print( "\t===== Chapters ===============================================================================================================" )
 	Chapters									= GetChapters( xmlData )
@@ -242,19 +262,31 @@ def main():
 	ProgArgs									= argparser()
 	if ( not ProgArgs ):
 		pStatus( 1 )
-	if ( not os.path.isfile( ProgArgs.file ) ):
-		pStatus( 2 )
+	if ProgArgs.file:
+		if ( not os.path.isfile( ProgArgs.file ) ):
+			pStatus( 2 )
+	elif ProgArgs.directory:
+		if ( not os.path.isdir( ProgArgs.directory ) ):
+			pStatus( 3 )
 		
 	if ( ProgArgs.info ):
 		success									= Info( ProgArgs )
 		
-	MInfo										= MediaInfo( ProgArgs.file, Logger )
+	if ProgArgs.file != None:
+		MInfo									= MediaInfo( ProgArgs.file, Logger )
+		Type									= "F"
+	elif ProgArgs.directory != None:
+		MInfo									= MediaInfo( ProgArgs.directory, Logger )
+		Type									= "D"
+	else:
+		sys.exit(2)
 	
 	DataFormat									= "xml"
-	xmlData										= GetInform( DataFormat )
+	xmlData										= GetInform( DataFormat, Type )
 	
 	if ( ProgArgs.pprint ):
-		PrintTrackData( xmlData )
+		PrintXMLData( xmlData )
+		PrintTrackData( xmlData, Type )
 	
 	if ( ProgArgs.dryrun ):
 		PrettyPrint( xmlData )

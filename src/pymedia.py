@@ -27,6 +27,7 @@ def argparser():
 	gap.add_argument( '-f',	'--file',		action = 'store',		dest = "file",		metavar = "file" )
 	gap.add_argument( '-i',	'--info',		action = 'store_true' )
 	gap.add_argument( '-v',	'--verbose',	action = 'count',		default = 1 )
+	gap.add_argument( 		'--isopath',	action = 'store',		dest = "isopath",	metavar = "ISO Mount Path",	default = "isotmp" )
 	gap = ap.add_argument_group( 'logging' )
 	gap.add_argument( 		'--loglevel',	action = 'store',		dest = "loglevel",	metavar = "logging level",	default = 'info',	choices = ['crit', 'error', 'warn', 'notice', 'info', 'verbose', 'debug', 'insane'] )
 	gap.add_argument(		'--logfile',	action = 'store',		dest = "logfile",	metavar = "logfile" )
@@ -43,6 +44,7 @@ def argparser():
 	gap = ap.add_argument_group( 'handbrake options' )
 	gap.add_argument(	'--handbrake',	action = 'store_true' )
 	gap.add_argument(	'--hbtitle',	action = 'store',	dest = "hbtitle",	metavar = "DVD Title",			default = "1" )
+	gap.add_argument(	'--hbdir',		action = 'store',	dest = "hbdir",		metavar = "Output Directory",	default = "encode" )
 	gap.add_argument(	'--hbangle',	action = 'store',	dest = "hbangle",	metavar = "DVD Angle",			default = "1" )
 	gap.add_argument(	'--hbverbose',	action = 'store',	dest = "hbverbose",	metavar = "Handbrake Verosity",	default = "2",		choices = ['0','1','2'] )
 	gap.add_argument(	'--hbpreset',	action = 'store',	dest = "hbpreset",	metavar = "x264 Preset",		default = "slow",	choices = ['ultrafast','superfast','veryfast','faster','fast','medium','slow','slower','veryslow','placebo'] )
@@ -117,33 +119,11 @@ def pStatus( status ):
 		sys.exit( status )
 	return True
 ###------------------------------------------------------------------------------------------------------------------------------
-#def SaveInfo( InformData ):
-#	MInfo										= MediaInfo( ProgArgs.file, Logger )
-#	if ( ProgArgs.pprint ):
-#		Logger.debug( "Output Format:\t%s" % ( ProgArgs.format ) )
-#		if ( ProgArgs.format == "html" ):
-#			InformSoup							= bSoup( MInfo.InformData( ProgArgs.format ), "html5lib" )
-#			InformData							= InformSoup.prettify()
-#		elif ( ProgArgs.format == "xml" ):
-#			InformSoup							= bSoup( MInfo.InformData( ProgArgs.format ), "xml" )
-#			InformData							= InformSoup.prettify()
-#		else:
-#			InformData							= InformData( MInfo.ProgArgs.format )
-#	
-#	if ( ProgArgs.outfile ):
-#		CurrentDir								= os.getcwd()
-#		OutFile									= ( "%s/%s.%s" % ( CurrentDir, ProgArgs.outfile, MInfo.InfoType ) )
-#		OutHandle								= DataHandler( OutFile )
-#		if ( InformData ):
-#			OutHandle.Write( InformData )
-#		else:
-#			Logger.error( "Error getting media information from file.")
-#	else:
-#		if ( InformData ):
-#			print( InformData )
-#		else:
-#			Logger.error( "Error getting media information from file.")
-#	return True
+def fileType( fileName ):
+		index										= fileName.split('.')
+		idxLength									= len( index )
+		fileType									= index[idxLength-1]
+		return fileType
 ###------------------------------------------------------------------------------------------------------------------------------
 def GetChapters( xmlData ):
 	Chapter										= {}
@@ -156,18 +136,21 @@ def GetChapters( xmlData ):
 				Chapter[ChapCount]				= child.string.strip()
 	return Chapter
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetInform( DataFormat, Type ):
-	if Type == "F":
-		MInfo									= MediaInfo( ProgArgs.file, Logger )
-	elif Type == "D":
-		MInfo									= MediaInfo( ProgArgs.directory, Logger )
+def GetInform( MInfo, DataFormat ):
 	InformData									= MInfo.InformData( DataFormat )
 	return InformData
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetTracks( TrackSoup, Type, MediaType = "F" ):
+def GetTracks( TrackSoup, Type, MediaType = "file" ):
 	TInfo										= TrackInfo( TrackSoup, Type, MediaType, Logger )
 	Track										= TInfo.TrackInfo()
 	return Track
+###------------------------------------------------------------------------------------------------------------------------------
+def isNum( value ):
+    try:
+        float( value )
+        return True
+    except ValueError:
+        return False
 ###------------------------------------------------------------------------------------------------------------------------------
 def PrintTrack( Track ):
 	Type										= Track["type"]
@@ -182,12 +165,18 @@ def PrintTrack( Track ):
 		FormatProfile							= Track["formatprofile"]
 		print( "\t   Type: %s\t\tTrackID: %s\t\t\tFormat Profile: %s\tLanguage: %s\tDefault: %s\tForced: %s" % ( Type, TrackID, FormatProfile, Language, Default, Forced ) )
 	elif Type == "audio":
-		StreamID								= Track["streamid"]
+		try:
+			StreamID							= Track["streamid"]
+		except:
+			StreamID							= None
 		Format									= Track["format"]
 		Channels								= Track["channels"]
 		print( "\t   Type: %s\t\tTrackID: %s\tStreamID: %s\tFormat: %s\tChannels: %s\tLanguage: %s\tDefault: %s\tForced: %s" % ( Type, TrackID, StreamID, Format, Channels, Language, Default, Forced ) )
 	elif Type == "subtitle":
-		StreamID								= Track["streamid"]
+		try:
+			StreamID							= Track["streamid"]
+		except:
+			StreamID							= None
 		if ( Language == "English" ):
 			print( "\t   Type: %s\tTrackID: %s\tStreamID: %s\t\t\t\t\tLanguage: %s\tDefault: %s\tForced: %s" % ( Type, TrackID, StreamID, Language, Default, Forced ) )
 ###------------------------------------------------------------------------------------------------------------------------------
@@ -196,7 +185,7 @@ def PrintXMLData( xmlData ):
 	InformData									= xmlInform.prettify()
 	print(InformData)
 ###------------------------------------------------------------------------------------------------------------------------------
-def PrintTrackData( xmlData, MediaType = "F" ):
+def PrintTrackData( xmlData, MediaType = "file" ):
 	xmlInform									= bSoup( xmlData, "xml" )
 	Keys										= ['subtitle', 'audio', 'video']
 	Values										= ['Text', 'Audio', 'Video']
@@ -237,7 +226,7 @@ def WriteChapterFile( ChapterList ):
 		OutHandle.Write( "%s,%s" % ( ChapterNum, ChapterText ) )
 	return True
 ###------------------------------------------------------------------------------------------------------------------------------
-def GetTrackData( xmlData ):
+def GetTrackData( xmlData, MediaType = None ):
 	Tracks										= []
 	xmlInform									= bSoup( xmlData, "xml" )
 	Keys										= ['subtitle', 'audio', 'video']
@@ -252,14 +241,74 @@ def GetTrackData( xmlData ):
 		Values									= ['chapter', ChapterID, ChapterText]
 		ChapterDict								= dict( zip( Keys, Values ) )
 		Tracks.append( ChapterDict )
-	HandBrakeCLI								= HandBrake( ProgArgs, Tracks, Logger )
+	HandBrakeCLI								= HandBrake( ProgArgs, Tracks, MediaType = MediaType, Logger = Logger )
 	if ( HandBrakeCLI.ChapterList != False ):
 		if ( not ProgArgs.dryrun ):
 			WriteChapterFile( HandBrakeCLI.ChapterList )
 ###------------------------------------------------------------------------------------------------------------------------------
+def checkDir( Directory ):
+	if not os.path.isdir( Directory ):
+		if not ProgArgs.dryrun:
+			os.mkdir( Directory )
+		else:
+			print( "Creating directory:\t\t\"%s\"" % Directory )
+	if os.path.isdir( Directory ):
+		return True
+	else:
+		return False
+###------------------------------------------------------------------------------------------------------------------------------
+def listDir( directory ):
+	fList											= os.listdir( directory )
+	for item in fList:
+		if os.path.isdir( os.path.join( directory, item ) ):
+			Logger.debug( "Directory: %s" % ( item ) )
+		else:
+			Logger.debug( "File: %s" % ( item ) )
+###------------------------------------------------------------------------------------------------------------------------------
+def isoMount( action, file = None ):
+	import subprocess
+	isoDir											= os.path.join( os.getcwd(), ProgArgs.isopath )
+	if checkDir( isoDir ):
+		if action == "mount":
+			Command									= "sudo mount -o loop,ro \"%s\" \"%s\"" % ( file, isoDir )
+		elif action == "unmount":
+			Command									= "sudo umount \"%s\"" % ( isoDir )
+		Pipe										= subprocess.Popen( Command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+		StdOut, StdErr								= Pipe.communicate()
+		StdOut, StdErr								= StdOut.strip(), StdErr.strip()
+		ReturnCode									= Pipe.returncode
+		if ReturnCode != 0:
+			Logger.error( "%s" % ( StdErr ) )
+			Status									= False
+		else:
+			Status									= True
+		if ( action == "unmount" ) and ( Status == True ):
+			os.rmdir( isoDir )
+		#Logger.debug( "%s" % ( StdOut ) )
+		#Logger.debug( "Return Code:\t%s" % ( Status ) )
+	else:
+		Logger.error( "Could not create directory:\t\"%s\"" % ( isoDir ) )
+		Status										= False
+	return Status
+###------------------------------------------------------------------------------------------------------------------------------
+def MediaPath( directory ):
+	fList											= os.listdir( directory )
+	for item in fList:
+		if ( item == "BDMV" ) or ( item == "VIDEO_TS" ):
+			if os.path.isdir( os.path.join( directory, item ) ):
+				if ( item == "BDMV" ):
+					MediaPath						= os.path.join( directory, item )
+					MediaPath						= os.path.join( MediaPath, "STREAM" )
+				elif ( item == "VIDEO_TS" ):
+					MediaPath						= os.path.join( directory, item )
+			else:
+				MediaPath							= None
+	return MediaPath
+###------------------------------------------------------------------------------------------------------------------------------
 def main():
 	global	ProgArgs
-	ProgArgs									= argparser()
+	isoMounted										= False
+	ProgArgs										= argparser()
 	if ( not ProgArgs ):
 		pStatus( 1 )
 	if ProgArgs.file:
@@ -270,29 +319,44 @@ def main():
 			pStatus( 3 )
 		
 	if ( ProgArgs.info ):
-		success									= Info( ProgArgs )
+		success										= Info( ProgArgs )
 		
 	if ProgArgs.file != None:
-		MInfo									= MediaInfo( ProgArgs.file, Logger )
-		Type									= "F"
+		if ( fileType( ProgArgs.file ) == 'mkv' ) or ( fileType( ProgArgs.file ) == 'mp4' ):
+			mType									= "video"
+			MInfo									= MediaInfo( ProgArgs.file, Type = mType, Logger = Logger )
+		elif fileType( ProgArgs.file ) == 'iso':
+			isoDir									= os.path.join( os.getcwd(), ProgArgs.isopath )
+			if ( isoMount( "mount", ProgArgs.file ) ):
+				isoMounted							= True
+				Logger.info( "Mounted ISO File: \"%s\"\tto: \"%s\"" % ( ProgArgs.file, isoDir ) )
+				listDir( isoDir )
+			if MediaPath( isoDir ) != None:
+				mType								= "directory"
+				MInfo								= MediaInfo( MediaPath( isoDir ), Type = mType, Logger = Logger )
+			else:
+				Logger.error( "No media content found.")
 	elif ProgArgs.directory != None:
-		MInfo									= MediaInfo( ProgArgs.directory, Logger )
-		Type									= "D"
+		mType										= "directory"
+		MInfo										= MediaInfo( ProgArgs.directory, Type = mType, Logger = Logger )
 	else:
 		sys.exit(2)
 	
-	DataFormat									= "xml"
-	xmlData										= GetInform( DataFormat, Type )
+	DataFormat										= "xml"
+	xmlData											= GetInform( MInfo, DataFormat )
 	
 	if ( ProgArgs.pprint ):
 		PrintXMLData( xmlData )
-		PrintTrackData( xmlData, Type )
+		PrintTrackData( xmlData, MediaType = mType )
 	
 	if ( ProgArgs.dryrun ):
 		PrettyPrint( xmlData )
 		
 	if ( ProgArgs.handbrake ):
-		GetTrackData( xmlData )
+		GetTrackData( xmlData, MediaType = mType )
+	if isoMounted:
+		if ( isoMount( "unmount" ) ):
+			Logger.info( "Unounted ISO File: \"%s\"\tfrom: \"%s\"" % ( ProgArgs.file, os.path.join( os.getcwd(), ProgArgs.isopath ) ) )
 
 	return pStatus( 0 )
 ###------------------------------------------------------------------------------------------------------------------------------

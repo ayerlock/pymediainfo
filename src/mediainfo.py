@@ -19,8 +19,10 @@ def LibImport( libPath, libFile ):
 	return LibImport
 ###------------------------------------------------------------------------------------------------------------------------------
 class MediaInfo( object ):
-	def __init__( self, SourceMedia, Logger ):
+	def __init__( self, SourceMedia, Type = "file", Logger = None ):
 		self.SourceMedia							= SourceMedia
+		self.Type									= Type
+		Logger.debug( "SourceMedia:\t%s\tType:\t%s" % ( self.SourceMedia, self.Type ) )
 		self.Logger									= Logger
 		self.InfoType								= "normal"
 		self.MIPath									= "/usr/include/MediaInfoDLL"
@@ -29,15 +31,15 @@ class MediaInfo( object ):
 		self.MInfo									= self.MediaInfoDLL.MediaInfo()
 		if ( os.path.isfile( self.SourceMedia ) ):
 			self.fType( self.SourceMedia )
-			self.Logger.debug( "Found Media File:%s" % ( self.SourceMedia ) )
+			self.Logger.debug( "Found Media File:\t\"%s\"" % ( self.SourceMedia ) )
 		elif ( os.path.isdir( self.SourceMedia ) ):
-			self.Logger.debug( "Found Media File:%s" % ( self.SourceMedia ) )
+			self.Logger.debug( "Found Media Directory:\t\"%s\"" % ( self.SourceMedia ) )
 	###------------------------------------------------------------------------------------------------
 	def fType( self, fName ):
 		index										= fName.split('.')
 		idxLength									= len( index )
-		self.fExt									= index[idxLength-1]
-		sys.exit()
+		self.fType									= index[idxLength-1]
+		return self.fType
 	###------------------------------------------------------------------------------------------------
 	def DLLInfo( self ):
 		from pprint import pprint
@@ -73,20 +75,21 @@ class MediaInfo( object ):
 		return self.Get
 	###------------------------------------------------------------------------------------------------
 	def GetInfo( self ):
-		if ( self.OpenMFile() ):
-			if ( self.InfoType == "html" ):
-				self.MInfo.Option( "Inform", "HTML" )
-			elif ( self.InfoType == "xml" ):
-				self.MInfo.Option( "Inform", "XML" )
-			#MediaInfo.Option( "Complete", "1" )
-			self.InformData							= self.MInfo.Inform()
-			self.CloseMFile()
+		if os.path.isfile( self.SourceMedia ):
+			if ( self.OpenMFile() ):
+				if ( self.InfoType == "html" ):
+					self.MInfo.Option( "Inform", "HTML" )
+				elif ( self.InfoType == "xml" ):
+					self.MInfo.Option( "Inform", "XML" )
+				#MediaInfo.Option( "Complete", "1" )
+				self.InformData							= self.MInfo.Inform()
+				self.CloseMFile()
 		else:
-			if ( os.path.isdir( self.SourceMedia ) ):
-				Command								= "mediainfo --Output=XML %s" % ( self.SourceMedia )
-				SubData								= subprocess.Popen( Command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
-				InformData, StdErr					= SubData.communicate()
-				self.InformData						= InformData.strip()
+			Command								= "mediainfo --Output=XML %s" % ( self.SourceMedia )
+			self.Logger.debug("Command:\t%s" % ( Command ) )
+			Pipe								= subprocess.Popen( Command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+			StdOut, StdErr						= Pipe.communicate()
+			self.InformData						= StdOut.strip()
 	###------------------------------------------------------------------------------------------------
 	def InformData( self, InfoType = "normal" ):
 		self.InfoType								= InfoType
@@ -101,7 +104,8 @@ class MediaInfo( object ):
 		return self.InfoType
 ###------------------------------------------------------------------------------------------------------------------------------
 class Track( object ):
-	def __init__( self, TrackSoup, TrackType, MediaType, Logger ):
+	#def __init__( self, TrackSoup, TrackType, MediaType, Logger ):
+	def __init__( self, TrackSoup, TrackType, MediaType = "file", Logger = None ):
 		self.Logger									= Logger
 		self.MediaType								= MediaType
 		self.TrackSoup								= TrackSoup

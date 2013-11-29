@@ -46,7 +46,7 @@ def argparser():
 	gap.add_argument(	'--hbtitle',	action = 'store',	dest = "hbtitle",	metavar = "DVD Title",			default = "1" )
 	gap.add_argument(	'--hbdir',		action = 'store',	dest = "hbdir",		metavar = "Output Directory",	default = "encode" )
 	gap.add_argument(	'--hbangle',	action = 'store',	dest = "hbangle",	metavar = "DVD Angle",			default = "1" )
-	gap.add_argument(	'--hbverbose',	action = 'store',	dest = "hbverbose",	metavar = "Handbrake Verosity",	default = "2",		choices = ['0','1','2'] )
+	gap.add_argument(	'--hbverbose',	action = 'store',	dest = "hbverbose",	metavar = "Handbrake Verbosity",default = "2",		choices = ['0','1','2'] )
 	gap.add_argument(	'--hbpreset',	action = 'store',	dest = "hbpreset",	metavar = "x264 Preset",		default = "slow",	choices = ['ultrafast','superfast','veryfast','faster','fast','medium','slow','slower','veryslow','placebo'] )
 	gap.add_argument(	'--hbprofile',	action = 'store',	dest = "hbprofile",	metavar = "x264 Profile",		default = "high",	choices = ['auto','high','main','baseline'] )
 	gap.add_argument(	'--hblevel',	action = 'store',	dest = "hblevel",	metavar = "x264 Profile Level",	default = "4.1",	choices = ['4.0','4.1','4.2','5.0','5.1','5.2'] )

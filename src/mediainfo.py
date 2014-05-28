@@ -112,7 +112,8 @@ class Track( object ):
 		self.TrackType								= TrackType
 		self.TrackDict								= {}
 		if ( self.TrackType == "audio" ):
-			self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_count', 'Language', 'Title', 'Default', 'Forced']
+			#self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_count', 'Language', 'Title', 'Default', 'Forced']
+			self.Keys								= ['index', 'audio', 'streamid', 'ID', 'Format', 'Channel_s_', 'Language', 'Title', 'Default', 'Forced']
 			self.Values								= ['0', 'type', 'streamid', 'trackid', 'format', 'channels', 'language', 'title', 'default', 'forced']
 		elif ( self.TrackType == "subtitle" ):
 			self.Keys								= ['index', 'subtitle', 'streamid', 'ID', 'Language', 'Default', 'Forced']

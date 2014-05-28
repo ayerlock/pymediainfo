@@ -322,7 +322,7 @@ def main():
 		success										= Info( ProgArgs )
 		
 	if ProgArgs.file != None:
-		if ( fileType( ProgArgs.file ) == 'mkv' ) or ( fileType( ProgArgs.file ) == 'mp4' ):
+		if ( fileType( ProgArgs.file ) == 'mkv' ) or ( fileType( ProgArgs.file ) == 'mp4' ) or ( fileType( ProgArgs.file ) == 'mpg' ):
 			mType									= "video"
 			MInfo									= MediaInfo( ProgArgs.file, Type = mType, Logger = Logger )
 		elif fileType( ProgArgs.file ) == 'iso':

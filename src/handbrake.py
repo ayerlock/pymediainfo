@@ -281,6 +281,8 @@ class HandBrake( object ):
 		print( self.Command )
 	###------------------------------------------------------------------------------------------------
 	def BuildCLI( self ):
+		self.OutFile									= re.sub( "\.ts#", ".mkv", self.OutFile )
+		#self.OutFile									= re.sub( "\.mp4#", ".mkv", self.OutFile )
 		OptionList										= []
 		OptionList.append( 'HandBrakeCLI' )
 		OptionList.append( '--input "%s"' % ( self.InFile ) )
